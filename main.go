@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/pkg/browser"
 )
@@ -33,12 +34,11 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-    		line := scanner.Text()
-    		if !strings.HasPrefix(line, "#") {
-        		appendLink(line)
-    		}
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "#") {
+			appendLink(line)
+		}
 	}
-
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
