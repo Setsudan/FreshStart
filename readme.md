@@ -2,6 +2,8 @@
 
 This is a go script that will open all links given in a links.txt file in the same directory as the main.go or freshstart.exe
 
+There's a beta desktop version on the "desktop-gui-version" branch
+
 It will wait until user input after the first link (in supposition your selected browser) then will open all the links to your browser.
 
 This is an example of what your links.txt file should look like :
