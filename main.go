@@ -41,7 +41,7 @@ func main() {
 
 func getInput() string {
 	var path string
-	println("Enter the path to the .txt file")
+	println("Enter the path to the .txt file (same directory : 'example.txt' | parent directory : '../example.txt' | child directory : 'child/example.txt')")
 	fmt.Scanln(&path)
 	return path
 }
@@ -65,9 +65,11 @@ func extractLinks(file *os.File) ([]string, error) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if !strings.HasPrefix(line, "#") {
+		// ignore lines starting with # and empty lines
+		if !strings.HasPrefix(line, "#") && line != "" {
 			links = append(links, line)
 		}
+
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, err

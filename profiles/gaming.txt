@@ -1,0 +1,15 @@
+# This is the gaming profile
+
+# Steam
+https://store.steampowered.com/about/?snr=1_4_springsale__global-header
+# Ea desktop
+https://origin-a.akamaihd.net/EA-Desktop-Client-Download/installer-releases/EAappInstaller.exe
+# Ubisoft
+https://ubi.li/4vxt9
+# Epic games
+https://www.epicgames.com/store/en-US/download
+# Gog
+https://www.gog.com/
+
+# Discord
+https://discordapp.com/api/download?platform=win
