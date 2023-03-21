@@ -31,11 +31,14 @@ func main() {
 	}
 	defer file.Close()
 
-	// Scan the file line by line
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		appendLink(scanner.Text())
+    		line := scanner.Text()
+    		if !strings.HasPrefix(line, "#") {
+        		appendLink(line)
+    		}
 	}
+
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
