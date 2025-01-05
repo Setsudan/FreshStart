@@ -15,3 +15,5 @@ https://discord.com/api/downloads/distributions/app/installers/latest?channel=st
 https://github.com/git-for-windows/git/releases/download/v2.35.0.windows.1/Git-2.35.0-64-bit.exe
 https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe
 ```
+
+To be honest I prefer using [this](https://github.com/ChrisTitusTech/winutil)
