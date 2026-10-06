@@ -30,10 +30,12 @@ func ListProfiles(dir string) ([]string, error) {
 }
 
 // LoadProfile reads and parses the profile named name under dir.
-// name may be a bare file name (joined with dir) or an absolute/relative path;
-// if name contains a path separator or is absolute, dir is ignored.
+// name must be a bare file name (no path separators or ".." traversal).
 func LoadProfile(dir, name string) (ParseResult, string, error) {
-	path := profilePath(dir, name)
+	path, err := profilePath(dir, name)
+	if err != nil {
+		return ParseResult{}, "", err
+	}
 	result, err := ParseLinksFile(path)
 	if err != nil {
 		return ParseResult{}, path, err
@@ -42,25 +44,70 @@ func LoadProfile(dir, name string) (ParseResult, string, error) {
 }
 
 // SaveProfile writes content to the profile named name under dir.
-// Content is stored as-is (typically a link list text). Parent directories
-// are created if needed when name includes subfolders.
+// Content is stored as-is (typically a link list text). Writes are atomic
+// (temp file + rename) so a failed write does not truncate an existing profile.
 func SaveProfile(dir, name, content string) (string, error) {
-	if strings.TrimSpace(name) == "" {
-		return "", fmt.Errorf("profile name is empty")
+	path, err := profilePath(dir, name)
+	if err != nil {
+		return "", err
 	}
-	path := profilePath(dir, name)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return path, fmt.Errorf("create profile dir: %w", err)
 	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := writeFileAtomic(path, []byte(content), 0o644); err != nil {
 		return path, fmt.Errorf("save profile: %w", err)
 	}
 	return path, nil
 }
 
-func profilePath(dir, name string) string {
-	if filepath.IsAbs(name) || strings.ContainsRune(name, os.PathSeparator) || strings.Contains(name, "/") {
-		return filepath.Clean(name)
+// profilePath joins dir with a bare profile file name. Names with path
+// separators, absolute paths, or ".." are rejected to prevent traversal.
+func profilePath(dir, name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "", fmt.Errorf("profile name is empty")
 	}
-	return filepath.Join(dir, name)
+	if name == "." || name == ".." || strings.ContainsAny(name, `/\`) || filepath.Base(name) != name {
+		return "", fmt.Errorf("profile name must be a bare file name without path separators")
+	}
+	return filepath.Join(dir, name), nil
+}
+
+func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
+	dir := filepath.Dir(path)
+	tmp, err := os.CreateTemp(dir, ".freshstart-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = os.Remove(tmpName)
+		}
+	}()
+
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Chmod(perm); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+
+	if err := os.Rename(tmpName, path); err != nil {
+		// Windows refuses rename over an existing file; remove then retry.
+		if remErr := os.Remove(path); remErr != nil && !os.IsNotExist(remErr) {
+			return err
+		}
+		if err2 := os.Rename(tmpName, path); err2 != nil {
+			return err2
+		}
+	}
+	cleanup = false
+	return nil
 }

@@ -101,17 +101,17 @@ func FormatLinks(links []string) string {
 	return b.String()
 }
 
-// ExtractLinkLines skips blank lines and '#' comments (after trim) and returns
-// the remaining trimmed lines without URL validation. Matches classic CLI behavior.
+// ExtractLinkLines matches classic CLI extractLinks: skip empty lines and lines
+// that literally start with '#', keep all other lines unchanged (no TrimSpace).
+// bufio.Scanner already strips the line-ending newline and a preceding '\r'.
 func ExtractLinkLines(r io.Reader) ([]string, error) {
 	var links []string
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		trimmed := strings.TrimSpace(scanner.Text())
-		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
-			continue
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "#") && line != "" {
+			links = append(links, line)
 		}
-		links = append(links, trimmed)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, err

@@ -58,6 +58,14 @@ func TestLoadAndSaveProfile(t *testing.T) {
 	if len(result.Links) != 1 || result.Links[0] != "https://save.example" {
 		t.Fatalf("result=%+v", result)
 	}
+	// Comments preserved on disk (save stores content as-is).
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(raw) != content {
+		t.Fatalf("raw=%q want %q", raw, content)
+	}
 }
 
 func TestSaveProfile_EmptyName(t *testing.T) {
@@ -71,5 +79,51 @@ func TestLoadProfile_Missing(t *testing.T) {
 	_, _, err := LoadProfile(t.TempDir(), "gone.txt")
 	if err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestProfilePath_RejectsTraversal(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"../evil.txt", "..", "foo/bar", "foo\\bar", "/tmp/x"} {
+		if _, err := SaveProfile(dir, name, "x"); err == nil {
+			t.Fatalf("SaveProfile(%q) should reject traversal", name)
+		}
+		if _, _, err := LoadProfile(dir, name); err == nil {
+			t.Fatalf("LoadProfile(%q) should reject traversal", name)
+		}
+	}
+	// Ensure nothing escaped the temp dir.
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("expected empty dir after rejected saves, got %v", entries)
+	}
+}
+
+func TestSaveProfile_OverwritePreservesOnSuccess(t *testing.T) {
+	dir := t.TempDir()
+	path, err := SaveProfile(dir, "p.txt", "first\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := SaveProfile(dir, "p.txt", "second\n"); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(raw) != "second\n" {
+		t.Fatalf("got %q", raw)
+	}
+	// No leftover temp files.
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Name() != "p.txt" {
+		t.Fatalf("entries=%v", entries)
 	}
 }

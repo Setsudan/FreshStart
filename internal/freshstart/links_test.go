@@ -103,13 +103,36 @@ func TestFormatLinks(t *testing.T) {
 	}
 }
 
-func TestExtractLinkLines_NoValidation(t *testing.T) {
-	input := "# c\n\nhttps://ok\nnot-validated\n"
+func TestExtractLinkLines_ClassicCLI(t *testing.T) {
+	// Classic CLI: no TrimSpace — leading-space comment is kept; URL spaces kept.
+	input := "# c\n\nhttps://ok\nnot-validated\n  # not a comment\n  https://spaced\n"
 	links, err := ExtractLinkLines(strings.NewReader(input))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(links) != 2 || links[1] != "not-validated" {
+	want := []string{"https://ok", "not-validated", "  # not a comment", "  https://spaced"}
+	if len(links) != len(want) {
+		t.Fatalf("links=%v want %v", links, want)
+	}
+	for i := range want {
+		if links[i] != want[i] {
+			t.Fatalf("links=%v want %v", links, want)
+		}
+	}
+}
+
+func TestExtractLinkLines_CRLF(t *testing.T) {
+	input := "https://a.example\r\n# comment\r\nhttps://b.example\r\n"
+	links, err := ExtractLinkLines(strings.NewReader(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(links) != 2 {
 		t.Fatalf("links=%v", links)
+	}
+	for _, l := range links {
+		if strings.Contains(l, "\r") {
+			t.Fatalf("CRLF left \\r in URL: %q", l)
+		}
 	}
 }
