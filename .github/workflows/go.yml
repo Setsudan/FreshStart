@@ -22,11 +22,13 @@ jobs:
         with:
           go-version-file: go.mod
         id: go
+      - name: Vet
+        run: go vet ./...
       - name: Test
         run: go test ./...
       - name: Build
         run: go build -o build/main
-      - name: Run
-        run: ./build/main
+      - name: Build Windows GUI
+        run: CGO_ENABLED=0 GOOS=windows go build -ldflags="-H windowsgui" -o build/freshstart-gui.exe ./cmd/freshstart-gui
 
 # Path: .github\workflows\go.yml
