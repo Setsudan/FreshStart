@@ -136,3 +136,61 @@ func TestExtractLinkLines_CRLF(t *testing.T) {
 		}
 	}
 }
+
+const bom = "\uFEFF"
+
+func TestExtractLinkLines_StripsLeadingBOM(t *testing.T) {
+	links, err := ExtractLinkLines(strings.NewReader(bom + "https://a.example\n  https://kept\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"https://a.example", "  https://kept"}
+	if len(links) != len(want) || links[0] != want[0] || links[1] != want[1] {
+		t.Fatalf("links=%q want %q", links, want)
+	}
+}
+
+func TestExtractLinkLines_BOMBeforeComment(t *testing.T) {
+	links, err := ExtractLinkLines(strings.NewReader(bom + "# header\nhttps://a.example\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(links) != 1 || links[0] != "https://a.example" {
+		t.Fatalf("links=%q", links)
+	}
+}
+
+func TestParseLinks_StripsLeadingBOM(t *testing.T) {
+	r := ParseLinks(strings.NewReader(bom + "https://a.example\r\nhttps://b.example\r\n"))
+	if len(r.Errors) != 0 {
+		t.Fatalf("errors=%v", r.Errors)
+	}
+	if len(r.Links) != 2 || r.Links[0] != "https://a.example" {
+		t.Fatalf("links=%q", r.Links)
+	}
+}
+
+func TestBOMMidFileLeftAlone(t *testing.T) {
+	input := "https://a.example\n" + bom + "https://b.example\n"
+	links, err := ExtractLinkLines(strings.NewReader(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(links) != 2 || links[1] != bom+"https://b.example" {
+		t.Fatalf("CLI links=%q", links)
+	}
+	r := ParseLinks(strings.NewReader(input))
+	if len(r.Links) != 1 || len(r.Errors) != 1 || r.Errors[0].Line != 2 {
+		t.Fatalf("GUI links=%q errors=%v", r.Links, r.Errors)
+	}
+}
+
+func TestShortInputWithoutBOM(t *testing.T) {
+	links, err := ExtractLinkLines(strings.NewReader("ab"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(links) != 1 || links[0] != "ab" {
+		t.Fatalf("links=%q", links)
+	}
+}

@@ -51,11 +51,11 @@ type ui struct {
 	profileBtns []*widget.Clickable
 	profiles    []string
 
-	mu           sync.Mutex
-	busy         bool
-	statusDirty  bool
-	statusLines  []string
-	invalidate   func()
+	mu          sync.Mutex
+	busy        bool
+	statusDirty bool
+	statusLines []string
+	invalidate  func()
 }
 
 func newUI() *ui {

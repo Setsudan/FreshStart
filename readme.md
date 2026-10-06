@@ -20,7 +20,7 @@ Blank lines and lines starting with `#` are ignored. Profiles under `profiles/` 
 
 ## Building the CLI
 
-Requires Go 1.21+ (module targets a current Go).
+Requires Go 1.24.4 or newer (see `go.mod`).
 
 ```bash
 # Linux / macOS / Windows (console)
@@ -50,7 +50,7 @@ No rsrc/manifest step is required for Gio. Do not commit built `.exe` files; the
 
 ### GUI framework choice
 
-Gio was chosen because it targets Windows with pure Go (no cgo), so `GOOS=windows GOARCH=amd64 go build` works from this Linux box without a MinGW toolchain. Fyne was avoided for that reason. The non-UI logic stays in `internal/freshstart` with no GUI imports so Linux `go test` / `go vet` stay headless.
+Gio was chosen because it targets Windows with pure Go (no cgo), so `GOOS=windows GOARCH=amd64 go build` works from Linux or macOS without a MinGW toolchain. Fyne was avoided for that reason. The non-UI logic stays in `internal/freshstart` with no GUI imports so Linux `go test` / `go vet` stay headless.
 
 ## Testing
 

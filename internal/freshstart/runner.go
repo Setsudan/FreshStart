@@ -9,7 +9,7 @@ type Opener func(url string) error
 
 // ProgressEvent is emitted while OpenAll runs.
 type ProgressEvent struct {
-	Index   int    // 0-based index into the link list
+	Index   int // 0-based index into the link list
 	Total   int
 	URL     string
 	Err     error  // non-nil when this URL failed to open

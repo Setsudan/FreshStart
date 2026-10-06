@@ -2,6 +2,7 @@ package freshstart
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"net/url"
@@ -31,7 +32,7 @@ type ParseResult struct {
 // be an absolute http or https URL to be accepted as a link.
 func ParseLinks(r io.Reader) ParseResult {
 	var result ParseResult
-	scanner := bufio.NewScanner(r)
+	scanner := newLineScanner(r)
 	lineNo := 0
 	for scanner.Scan() {
 		lineNo++
@@ -106,7 +107,7 @@ func FormatLinks(links []string) string {
 // bufio.Scanner already strips the line-ending newline and a preceding '\r'.
 func ExtractLinkLines(r io.Reader) ([]string, error) {
 	var links []string
-	scanner := bufio.NewScanner(r)
+	scanner := newLineScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if !strings.HasPrefix(line, "#") && line != "" {
@@ -117,4 +118,18 @@ func ExtractLinkLines(r io.Reader) ([]string, error) {
 		return nil, err
 	}
 	return links, nil
+}
+
+// utf8BOM is the byte-order mark some Windows editors write at the start of a file.
+var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
+
+// newLineScanner returns a line scanner over r that drops a single leading
+// UTF-8 BOM, so the first link is not corrupted. A BOM later in the input is
+// left untouched.
+func newLineScanner(r io.Reader) *bufio.Scanner {
+	br := bufio.NewReader(r)
+	if head, err := br.Peek(len(utf8BOM)); err == nil && bytes.Equal(head, utf8BOM) {
+		_, _ = br.Discard(len(utf8BOM))
+	}
+	return bufio.NewScanner(br)
 }
